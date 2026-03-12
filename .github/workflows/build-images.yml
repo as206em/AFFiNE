@@ -12,6 +12,23 @@ on:
       git-short-hash:
         type: string
         required: true
+  workflow_dispatch:
+    inputs:
+      build-type:
+        description: 'Image tag prefix, e.g. stable or canary'
+        type: string
+        required: true
+      app-version:
+        description: 'App version to stamp into the build'
+        type: string
+        required: true
+      git-short-hash:
+        description: 'Short git hash to append to the pushed image tag'
+        type: string
+        required: true
+
+env:
+  IMAGE_REPOSITORY: ghcr.io/as206em/affine
 
 permissions:
   contents: 'write'
@@ -272,4 +289,4 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           provenance: true
           file: .github/deployment/node/Dockerfile
-          tags: ghcr.io/toeverything/affine:${{inputs.build-type}}-${{ inputs.git-short-hash }}
+          tags: ${{ env.IMAGE_REPOSITORY }}:${{ inputs.build-type }}-${{ inputs.git-short-hash }}
