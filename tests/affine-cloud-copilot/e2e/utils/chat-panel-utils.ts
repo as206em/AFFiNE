@@ -26,13 +26,19 @@ type ChatMessage = ChatUserMessage | ChatAssistantMessage | ChatActionMessage;
 
 export class ChatPanelUtils {
   public static async openChatPanel(page: Page) {
-    if (await page.getByTestId('sidebar-tab-chat').isHidden()) {
-      await page.getByTestId('right-sidebar-toggle').click({
+    const chatTab = page.getByTestId('sidebar-tab-chat');
+    const sidebarToggle = page.getByTestId('right-sidebar-toggle');
+
+    const isChatTabVisible = await chatTab.isVisible().catch(() => false);
+
+    if (!isChatTabVisible) {
+      await sidebarToggle.click({
         delay: 200,
       });
-      await page.waitForTimeout(500); // wait the sidebar stable
     }
-    await page.getByTestId('sidebar-tab-chat').click();
+
+    await expect(chatTab).toBeVisible({ timeout: 10_000 });
+    await chatTab.click();
     await expect(page.getByTestId('sidebar-tab-content-chat')).toBeVisible();
   }
 
