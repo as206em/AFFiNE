@@ -1,6 +1,6 @@
 import { cssVarV2 } from '@toeverything/theme/v2';
 import clsx from 'clsx';
-import { type HTMLAttributes, useState } from 'react';
+import { type ChangeEvent, type HTMLAttributes, useCallback, useState } from 'react';
 
 import { Button } from '../button';
 import { RadioGroup, type RadioItem } from '../radio';
@@ -12,7 +12,46 @@ import { type IconData, IconType } from './type';
 const panels: Array<RadioItem> = [
   { value: 'Emoji', className: styles.headerNavItem },
   { value: 'Icons', className: styles.headerNavItem },
+  { value: 'Upload', className: styles.headerNavItem },
 ];
+
+const uploadAccept = 'image/png,image/jpeg,image/svg+xml';
+
+const toResizedIconBlob = async (file: File): Promise<Blob | null> => {
+  if (file.type === 'image/svg+xml') {
+    return file;
+  }
+  if (file.type !== 'image/png' && file.type !== 'image/jpeg') {
+    return null;
+  }
+  const src = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error('failed to load image'));
+      img.src = src;
+    });
+    const maxSize = 200;
+    const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+    const width = Math.max(1, Math.round(image.width * scale));
+    const height = Math.max(1, Math.round(image.height * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      return null;
+    }
+    context.drawImage(image, 0, 0, width, height);
+    const type = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+    return await new Promise<Blob | null>(resolve => {
+      canvas.toBlob(resolve, type, type === 'image/jpeg' ? 0.85 : undefined);
+    });
+  } finally {
+    URL.revokeObjectURL(src);
+  }
+};
 
 export const IconPicker = ({
   className,
@@ -22,6 +61,21 @@ export const IconPicker = ({
   onSelect?: (data?: IconData) => void;
 }) => {
   const [activePanel, setActivePanel] = useState<string>('Emoji');
+  const onUpload = useCallback(
+    async (event: ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = '';
+      if (!file) {
+        return;
+      }
+      const resized = await toResizedIconBlob(file);
+      if (!resized) {
+        return;
+      }
+      onSelect?.({ type: IconType.Blob, blob: resized });
+    },
+    [onSelect]
+  );
 
   return (
     <div className={clsx(styles.container, className)} style={{ ...style }}>
@@ -67,6 +121,21 @@ export const IconPicker = ({
               onSelect?.({ type: IconType.AffineIcon, name: icon, color });
             }}
           />
+        ) : activePanel === 'Upload' ? (
+          <div className={styles.uploadPanel}>
+            <label className={styles.uploadButton}>
+              <input
+                className={styles.uploadInput}
+                type="file"
+                accept={uploadAccept}
+                onChange={onUpload}
+              />
+              Upload image
+            </label>
+            <div className={styles.uploadHint}>
+              PNG, JPEG, SVG. PNG/JPEG auto resized to 200px max.
+            </div>
+          </div>
         ) : null}
       </main>
     </div>

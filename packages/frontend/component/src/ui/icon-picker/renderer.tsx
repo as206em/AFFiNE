@@ -1,7 +1,31 @@
 import type { ReactNode } from 'react';
+import { useEffect, useState } from 'react';
 
 import { AffineIconRenderer } from './renderer/affine-icon';
 import { type IconData, IconType } from './type';
+
+const BlobIconRenderer = ({ blob }: { blob: Blob }) => {
+  const [url, setUrl] = useState('');
+
+  useEffect(() => {
+    const objectUrl = URL.createObjectURL(blob);
+    setUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [blob]);
+
+  if (!url) {
+    return null;
+  }
+
+  return (
+    <img
+      src={url}
+      alt=""
+      draggable={false}
+      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+    />
+  );
+};
 
 export const IconRenderer = ({
   data,
@@ -21,8 +45,7 @@ export const IconRenderer = ({
     return <AffineIconRenderer name={data.name} color={data.color} />;
   }
   if (data.type === IconType.Blob) {
-    // Not supported yet
-    return null;
+    return <BlobIconRenderer blob={data.blob} />;
   }
 
   return fallback ?? null;

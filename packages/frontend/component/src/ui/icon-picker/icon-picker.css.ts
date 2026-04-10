@@ -29,3 +29,35 @@ export const main = style({
   height: 0,
   flexGrow: 1,
 });
+
+export const uploadPanel = style({
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-start',
+  justifyContent: 'center',
+  gap: 12,
+  padding: 16,
+});
+
+export const uploadButton = style({
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  borderRadius: 8,
+  padding: '6px 12px',
+  background: cssVarV2.button.primary,
+  color: cssVarV2.button.pureWhiteText,
+  fontSize: 14,
+  fontWeight: 500,
+  cursor: 'pointer',
+});
+
+export const uploadInput = style({
+  display: 'none',
+});
+
+export const uploadHint = style({
+  color: cssVarV2.text.secondary,
+  fontSize: 12,
+});
