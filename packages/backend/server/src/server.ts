@@ -33,7 +33,7 @@ export async function run() {
     bufferLogs: true,
   });
 
-  app.useBodyParser('raw', { limit: 100 * OneMB });
+  app.useBodyParser('raw', { limit: 500 * OneMB });
 
   const logger = app.get(AFFiNELogger);
   app.useLogger(logger);
@@ -88,7 +88,7 @@ export async function run() {
 
   app.use(
     graphqlUploadExpress({
-      maxFileSize: 100 * OneMB,
+      maxFileSize: 500 * OneMB,
       maxFiles: 32,
     })
   );
