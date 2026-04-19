@@ -91,6 +91,43 @@ test('add new todo list', async ({ page }) => {
   await expect(page.locator('.affine-list--checked')).toHaveCount(0);
 });
 
+test('checked todo moves to end and keeps nested children', async ({
+  page,
+}) => {
+  await enterPlaygroundWithList(page, ['parent', 'child', 'tail'], 'todo');
+
+  await page.evaluate(() => {
+    const note = window.doc.getBlock('1')?.model;
+    if (!note) {
+      throw new Error('note not found');
+    }
+    window.doc.addBlock(
+      'affine:paragraph',
+      {
+        text: new window.$blocksuite.store.Text('after'),
+        type: 'text',
+      },
+      note
+    );
+  });
+
+  await waitNextFrame(page);
+  await focusRichText(page, 1);
+  await pressTab(page);
+  await assertBlockChildrenIds(page, '1', ['2', '4', '5']);
+  await assertBlockChildrenIds(page, '2', ['3']);
+
+  await page
+    .locator(
+      '[data-block-id="2"] > .affine-block-component > .affine-list-block-container > .affine-list-rich-text-wrapper > .affine-list-block__prefix'
+    )
+    .click();
+
+  await assertBlockChildrenIds(page, '1', ['4', '2', '5']);
+  await assertBlockChildrenIds(page, '2', ['3']);
+  await assertRichTexts(page, ['tail', 'parent', 'child', 'after']);
+});
+
 test('add new toggle list', async ({ page }) => {
   await enterPlaygroundRoom(page);
   await initEmptyParagraphState(page);

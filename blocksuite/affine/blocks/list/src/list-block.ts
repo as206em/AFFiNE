@@ -54,9 +54,20 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
       if (this.store.readonly) return;
 
       this.store.captureSync();
-      const checkedPropObj = { checked: !this.model.props.checked };
-      this.store.updateBlock(this.model, checkedPropObj);
-      if (this.model.props.checked) {
+      const checked = !this.model.props.checked;
+      this.store.updateBlock(this.model, { checked });
+      if (checked) {
+        const parent = this.store.getParent(this.model);
+        if (parent) {
+          let targetSibling = this.store.getNext(this.model);
+          while (
+            targetSibling?.flavour === 'affine:list' &&
+            targetSibling.props.type === 'todo'
+          ) {
+            targetSibling = this.store.getNext(targetSibling);
+          }
+          this.store.moveBlocks([this.model], parent, targetSibling, true);
+        }
         const checkEl = this.querySelector('.affine-list-block__todo-prefix');
         if (checkEl) {
           playCheckAnimation(checkEl).catch(console.error);
