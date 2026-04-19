@@ -19,6 +19,7 @@ import {
 import { describe, expect, test } from 'vitest';
 
 import { effects } from '../../../../blocks/note/src/effects';
+import { normalizeEmptyColumn } from '../../../../blocks/note/src/utils/normalize-columns';
 
 function createDoc() {
   const collection = new TestWorkspace({
@@ -170,5 +171,78 @@ describe('columns block', () => {
         column => column.children[0]?.flavour === 'affine:paragraph'
       )
     ).toBe(true);
+  });
+
+  test('flattens 2 columns back into note when one column becomes empty', () => {
+    const doc = createDoc();
+    const pageId = doc.addBlock('affine:page', { title: new Text('test') });
+    const noteId = doc.addBlock('affine:note', {}, pageId);
+    const beforeId = doc.addBlock(
+      'affine:paragraph',
+      { text: new Text('before') },
+      noteId
+    );
+    const columnsId = doc.addBlock('affine:columns', {}, noteId);
+    const leftId = doc.addBlock('affine:column', { width: 1 }, columnsId);
+    const rightId = doc.addBlock('affine:column', { width: 1 }, columnsId);
+    const leftParagraphId = doc.addBlock(
+      'affine:paragraph',
+      { text: new Text('left') },
+      leftId
+    );
+    const rightParagraphId = doc.addBlock(
+      'affine:paragraph',
+      { text: new Text('right') },
+      rightId
+    );
+    const afterId = doc.addBlock(
+      'affine:paragraph',
+      { text: new Text('after') },
+      noteId
+    );
+
+    doc.deleteBlock(leftParagraphId);
+    normalizeEmptyColumn(doc.getModelById(leftId)!);
+
+    const note = doc.getModelById(noteId);
+    expect(note?.children.map(child => child.flavour)).toEqual([
+      'affine:paragraph',
+      'affine:paragraph',
+      'affine:paragraph',
+    ]);
+    expect(note?.children.map(child => child.id)).toEqual([
+      beforeId,
+      rightParagraphId,
+      afterId,
+    ]);
+    expect(doc.getModelById(columnsId)).toBeNull();
+  });
+
+  test('reduces 3 columns to 2 when one column becomes empty', () => {
+    const doc = createDoc();
+    const pageId = doc.addBlock('affine:page', { title: new Text('test') });
+    const noteId = doc.addBlock('affine:note', {}, pageId);
+    const columnsId = doc.addBlock('affine:columns', {}, noteId);
+    const leftId = doc.addBlock('affine:column', { width: 1 }, columnsId);
+    const middleId = doc.addBlock('affine:column', { width: 1 }, columnsId);
+    const rightId = doc.addBlock('affine:column', { width: 1 }, columnsId);
+    const middleParagraphId = doc.addBlock(
+      'affine:paragraph',
+      { text: new Text('middle') },
+      middleId
+    );
+
+    doc.addBlock('affine:paragraph', { text: new Text('left') }, leftId);
+    doc.addBlock('affine:paragraph', { text: new Text('right') }, rightId);
+
+    doc.deleteBlock(middleParagraphId);
+    normalizeEmptyColumn(doc.getModelById(middleId)!);
+
+    const note = doc.getModelById(noteId);
+    const columns = doc.getModelById(columnsId);
+
+    expect(note?.children.map(child => child.id)).toEqual([columnsId]);
+    expect(columns?.children.map(child => child.id)).toEqual([leftId, rightId]);
+    expect(doc.getModelById(middleId)).toBeNull();
   });
 });
