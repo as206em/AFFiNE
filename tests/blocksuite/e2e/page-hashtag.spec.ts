@@ -3,6 +3,7 @@ import { expect, test } from '@playwright/test';
 import { switchReadonly } from './utils/actions/click.js';
 import {
   copyByKeyboard,
+  pressArrowLeft,
   pressBackspace,
   pressEnter,
   selectAllByKeyboard,
@@ -16,6 +17,52 @@ import {
   initEmptyParagraphState,
 } from './utils/actions/misc.js';
 import { assertRichTextInlineRange, assertRichTexts } from './utils/asserts.js';
+
+async function getHashtagCaretContainer(page: import('@playwright/test').Page) {
+  return page.evaluate(() => {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      return null;
+    }
+
+    const node = selection.getRangeAt(0).startContainer;
+    const element = node instanceof Text ? node.parentElement : node;
+    const prefix = element?.closest('.affine-page-hashtag-prefix');
+    const content = element?.closest('.affine-page-hashtag-content');
+
+    return {
+      inContent: !!content,
+      inPrefix: !!prefix,
+      offset: selection.getRangeAt(0).startOffset,
+    };
+  });
+}
+
+async function getCanonicalHashtagCaretContainer(
+  page: import('@playwright/test').Page,
+  index: number
+) {
+  return page.evaluate(index => {
+    const richText = document
+      .querySelector('editor-host')
+      ?.querySelector('rich-text') as any;
+    const range = richText?.inlineEditor?.toDomRange({ index, length: 0 });
+    if (!range) {
+      return null;
+    }
+
+    const node = range.startContainer;
+    const element = node instanceof Text ? node.parentElement : node;
+    const prefix = element?.closest('.affine-page-hashtag-prefix');
+    const content = element?.closest('.affine-page-hashtag-content');
+
+    return {
+      inContent: !!content,
+      inPrefix: !!prefix,
+      offset: range.startOffset,
+    };
+  }, index);
+}
 
 test('renders hashtag text as badge, hides # visually, and preserves plain text', async ({
   page,
@@ -166,6 +213,46 @@ test('hashtag v-element end boundary maps to the line end', async ({
     found: true,
     childCount: expect.any(Number),
   });
+});
+
+test('collapsed caret at hashtag index 1 maps to visible content', async ({
+  page,
+}) => {
+  await enterPlaygroundRoom(page);
+  await initEmptyParagraphState(page);
+  await focusRichText(page);
+
+  await type(page, '#abc');
+
+  await pressArrowLeft(page, 3);
+  await expect.poll(async () => getInlineSelectionIndex(page)).toBe(1);
+  await expect(getCanonicalHashtagCaretContainer(page, 1)).resolves.toEqual({
+    inContent: true,
+    inPrefix: false,
+    offset: 0,
+  });
+  await expect
+    .poll(async () => getHashtagCaretContainer(page))
+    .toEqual({
+      inContent: true,
+      inPrefix: false,
+      offset: 0,
+    });
+
+  await page.evaluate(() => {
+    const richText = document
+      .querySelector('editor-host')
+      ?.querySelector('rich-text') as any;
+    richText?.inlineEditor?.focusIndex(1);
+  });
+  await expect.poll(async () => getInlineSelectionIndex(page)).toBe(1);
+  await expect
+    .poll(async () => getHashtagCaretContainer(page))
+    .toEqual({
+      inContent: true,
+      inPrefix: false,
+      offset: 0,
+    });
 });
 
 test('pressing enter after trailing hashtag keeps the whole line above', async ({

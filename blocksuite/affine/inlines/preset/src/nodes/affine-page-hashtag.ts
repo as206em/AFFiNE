@@ -39,7 +39,7 @@ export class AffinePageHashtag extends ShadowlessElement {
     const content = this.delta.insert.slice(1);
 
     return html`<span class="affine-page-hashtag-badge" style=${styleMap(style)}
-      ><span class="affine-page-hashtag-prefix"
+      ><span class="affine-page-hashtag-prefix" contenteditable="false"
         ><v-text .str=${prefix}></v-text></span
       ><span class="affine-page-hashtag-content"
         ><v-text .str=${content}></v-text></span
