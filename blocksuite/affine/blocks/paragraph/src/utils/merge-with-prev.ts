@@ -26,8 +26,8 @@ import {
 } from '@blocksuite/affine-shared/utils';
 import { IS_MOBILE } from '@blocksuite/global/env';
 import {
-  type EditorHost,
   BlockSelection,
+  type EditorHost,
   TextSelection,
 } from '@blocksuite/std';
 import type { BlockModel, Text } from '@blocksuite/store';
