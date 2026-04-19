@@ -1,4 +1,5 @@
 import { DomRenderer } from '@blocksuite/affine-block-surface';
+import { Bound } from '@blocksuite/global/gfx';
 import { beforeEach, describe, expect, test } from 'vitest';
 
 import { wait } from '../utils/common.js';
@@ -21,6 +22,12 @@ async function waitForShapeElement(
   const startedAt = Date.now();
 
   while (Date.now() - startedAt < timeout) {
+    const shape = surfaceView.model.getElementById(shapeId);
+    if (shape) {
+      surfaceView.fitToViewport(Bound.deserialize(shape.xywh));
+      surfaceView.refresh();
+    }
+
     const root = surfaceView.renderRoot.querySelector('.dom-renderer-root');
     if (!root) {
       await wait(50);

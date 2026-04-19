@@ -25,7 +25,11 @@ import {
   matchModels,
 } from '@blocksuite/affine-shared/utils';
 import { IS_MOBILE } from '@blocksuite/global/env';
-import { BlockSelection, type EditorHost } from '@blocksuite/std';
+import {
+  type EditorHost,
+  BlockSelection,
+  TextSelection,
+} from '@blocksuite/std';
 import type { BlockModel, Text } from '@blocksuite/store';
 
 /**
@@ -71,10 +75,13 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
       return false;
 
     const lengthBeforeJoin = prevBlock.props.text?.length ?? 0;
+    const shouldRecoverMergedListCaret =
+      matchModels(prevBlock, [ListBlockModel]) && model.children.length > 0;
     prevBlock.props.text.join(model.text as Text);
     doc.deleteBlock(model, {
       bringChildrenTo: parent,
     });
+
     const syncMergedSelection = () => {
       focusTextModel(editorHost.std, prevBlock.id, lengthBeforeJoin);
       asyncSetInlineRange(editorHost.std, prevBlock, {
@@ -84,14 +91,21 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
     };
 
     syncMergedSelection();
-    editorHost.updateComplete
-      .then(() => {
-        syncMergedSelection();
-        [0, 50, 150].forEach(delay => {
-          setTimeout(syncMergedSelection, delay);
-        });
-      })
-      .catch(console.error);
+
+    const textSelection = editorHost.selection.find(TextSelection);
+    if (textSelection) {
+      editorHost.updateComplete
+        .then(() => {
+          editorHost.std.range.syncTextSelectionToRange(textSelection);
+          if (!shouldRecoverMergedListCaret) return;
+          [0, 50, 150].forEach(delay => {
+            setTimeout(() => {
+              syncMergedSelection();
+            }, delay);
+          });
+        })
+        .catch(console.error);
+    }
 
     return true;
   }
