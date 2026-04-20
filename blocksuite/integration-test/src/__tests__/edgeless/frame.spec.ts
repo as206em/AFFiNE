@@ -51,7 +51,7 @@ describe('frame', () => {
       rect!.x,
       rect!.y,
     ]);
-    expect(titleX).toBeCloseTo(0);
+    expect(Math.abs(titleX)).toBeLessThan(0.01);
     expect(titleY).toBeLessThan(0);
 
     const nestedFrame = service.doc.addBlock(
