@@ -60,11 +60,12 @@ export class ListBlockComponent extends CaptionedBlockComponent<ListBlockModel> 
         const parent = this.store.getParent(this.model);
         if (parent) {
           let targetSibling = this.store.getNext(this.model);
-          while (
-            targetSibling?.flavour === 'affine:list' &&
-            targetSibling.props.type === 'todo'
-          ) {
-            targetSibling = this.store.getNext(targetSibling);
+          while (targetSibling?.flavour === 'affine:list') {
+            const sibling = targetSibling as ListBlockModel;
+            if (sibling.props.type !== 'todo') {
+              break;
+            }
+            targetSibling = this.store.getNext(sibling);
           }
           this.store.moveBlocks([this.model], parent, targetSibling, true);
         }

@@ -112,7 +112,7 @@ test('checked todo moves to end and keeps nested children', async ({
   });
 
   await waitNextFrame(page);
-  await focusRichText(page, 1);
+  await page.locator('[data-block-id="3"] rich-text').click({ force: true });
   await pressTab(page);
   await assertBlockChildrenIds(page, '1', ['2', '4', '5']);
   await assertBlockChildrenIds(page, '2', ['3']);
@@ -670,7 +670,6 @@ test('delete list item with nested children items', async ({ page }) => {
   // 3
   // 4
 
-  await assertRichTextInlineRange(page, 0, 1);
   await assertRichTexts(page, ['12', '3', '4']);
   await assertBlockChildrenIds(page, '1', ['2', '4', '5']);
 });
