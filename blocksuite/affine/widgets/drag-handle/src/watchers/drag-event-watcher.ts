@@ -83,6 +83,7 @@ import { reorderList } from '../middleware/reorder-list';
 import {
   containBlock,
   extractIdsFromSnapshot,
+  getColumnDropTarget,
   getParentNoteBlock,
   getSnapshotRect,
   includeTextSelection,
@@ -217,20 +218,32 @@ export class DragEventWatcher {
     let result: DropResult | null = null;
 
     if (matchModels(dropModel, [ColumnBlockModel])) {
-      const domRect = getRectByBlockComponent(dropBlock);
+      if (
+        !snapshot.content.every(block =>
+          schema.safeValidate(block.flavour, dropModel.flavour)
+        )
+      ) {
+        return null;
+      }
+
+      const target = getColumnDropTarget(dropBlock, edge);
+      if (!target) {
+        return null;
+      }
+
+      const domRect = getRectByBlockComponent(target.element);
+      const y =
+        target.placement === 'before'
+          ? domRect.top - 3 * scale
+          : domRect.top + domRect.height - 3 * scale;
 
       result = {
-        placement: 'in',
-        rect: Rect.fromLWTH(
-          domRect.left,
-          domRect.width,
-          domRect.top + domRect.height - 3 * scale,
-          3 * scale
-        ),
+        placement: target.placement,
+        rect: Rect.fromLWTH(domRect.left, domRect.width, y, 3 * scale),
         modelState: {
-          model: dropModel,
+          model: target.model,
           rect: domRect,
-          element: dropBlock,
+          element: target.element,
         },
       };
     } else if (edge === 'right' && matchModels(dropModel, [ListBlockModel])) {

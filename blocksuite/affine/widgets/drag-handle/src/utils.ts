@@ -246,6 +246,35 @@ export const getDragHandleBlock = (block: BlockComponent | null) => {
   return block;
 };
 
+export const getColumnDropTarget = (
+  columnBlock: BlockComponent | null,
+  edge?: string
+) => {
+  if (!columnBlock || !matchModels(columnBlock.model, [ColumnBlockModel])) {
+    return null;
+  }
+
+  const children = columnBlock.childBlocks;
+  if (!children.length) {
+    return {
+      element: columnBlock,
+      model: columnBlock.model,
+      placement: 'in' as const,
+    };
+  }
+
+  const target = edge === 'top' ? children[0] : children[children.length - 1];
+  if (!target) {
+    return null;
+  }
+
+  return {
+    element: target,
+    model: target.model,
+    placement: edge === 'top' ? ('before' as const) : ('after' as const),
+  };
+};
+
 const getClosestColumnBlock = (
   noteBlock: BlockComponent,
   point: Point

@@ -3,6 +3,7 @@ import {
   BookmarkBlockModel,
   CalloutBlockModel,
   CodeBlockModel,
+  ColumnBlockModel,
   DatabaseBlockModel,
   DividerBlockModel,
   ImageBlockModel,
@@ -13,6 +14,7 @@ import { EMBED_BLOCK_MODEL_LIST } from '@blocksuite/affine-shared/consts';
 import {
   getNextContentBlock,
   matchModels,
+  normalizeEmptyColumn,
 } from '@blocksuite/affine-shared/utils';
 import {
   BlockSelection,
@@ -64,7 +66,9 @@ export function forwardDelete(std: BlockStdScope) {
       store.moveBlocks(nextSibling.children, parent, model, false);
     }
 
+    const nextSiblingParent = store.getParent(nextSibling);
     store.deleteBlock(nextSibling);
+    normalizeParentColumn(nextSiblingParent);
     return true;
   }
 
@@ -81,7 +85,9 @@ export function forwardDelete(std: BlockStdScope) {
         false
       );
     }
+    const nextBlockParent = store.getParent(nextBlock);
     store.deleteBlock(nextBlock);
+    normalizeParentColumn(nextBlockParent);
     return true;
   }
 
@@ -91,4 +97,10 @@ export function forwardDelete(std: BlockStdScope) {
     ]);
   }
   return true;
+}
+
+function normalizeParentColumn(parent: ParagraphBlockModel['parent']) {
+  if (matchModels(parent, [ColumnBlockModel])) {
+    normalizeEmptyColumn(parent);
+  }
 }

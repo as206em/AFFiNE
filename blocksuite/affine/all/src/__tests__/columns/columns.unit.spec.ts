@@ -20,6 +20,9 @@ import { describe, expect, test } from 'vitest';
 
 import { effects } from '../../../../blocks/note/src/effects';
 import { normalizeEmptyColumn } from '../../../../blocks/note/src/utils/normalize-columns';
+import { mergeWithPrev } from '../../../../blocks/paragraph/src/utils/merge-with-prev';
+import { createTestHost } from '../../../../shared/src/test-utils/create-test-host';
+import { getColumnDropTarget } from '../../../../widgets/drag-handle/src/utils';
 
 function createDoc() {
   const collection = new TestWorkspace({
@@ -244,5 +247,75 @@ describe('columns block', () => {
     expect(note?.children.map(child => child.id)).toEqual([columnsId]);
     expect(columns?.children.map(child => child.id)).toEqual([leftId, rightId]);
     expect(doc.getModelById(middleId)).toBeNull();
+  });
+
+  test('mergeWithPrev normalizes 2 columns when deleting the only block in a column', () => {
+    const doc = createDoc();
+    const pageId = doc.addBlock('affine:page', { title: new Text('test') });
+    const noteId = doc.addBlock('affine:note', {}, pageId);
+    const columnsId = doc.addBlock('affine:columns', {}, noteId);
+    const leftId = doc.addBlock('affine:column', { width: 1 }, columnsId);
+    const rightId = doc.addBlock('affine:column', { width: 1 }, columnsId);
+    const leftParagraphId = doc.addBlock(
+      'affine:paragraph',
+      { text: new Text('left') },
+      leftId
+    );
+    const rightParagraphId = doc.addBlock(
+      'affine:paragraph',
+      { text: new Text('right') },
+      rightId
+    );
+
+    const host = createTestHost(doc);
+    host.updateComplete = Promise.resolve() as never;
+    host.std.store = doc;
+    host.std.event = { active: false } as never;
+    host.std.range = {
+      syncTextSelectionToRange: () => {},
+    } as never;
+    host.std.get = () => ({
+      getEditorMode: () => 'page',
+    });
+
+    const rightParagraph = doc.getModelById(rightParagraphId);
+    const merged = mergeWithPrev(host, rightParagraph!);
+    const note = doc.getModelById(noteId);
+
+    expect(merged).toBe(true);
+    expect(note?.children.map(child => child.id)).toEqual([leftParagraphId]);
+    expect(doc.getModelById(columnsId)).toBeNull();
+  });
+
+  test('column drop target uses the last child at the bottom edge', () => {
+    const doc = createDoc();
+    const pageId = doc.addBlock('affine:page', { title: new Text('test') });
+    const noteId = doc.addBlock('affine:note', {}, pageId);
+    const columnsId = doc.addBlock('affine:columns', {}, noteId);
+    const columnId = doc.addBlock('affine:column', { width: 1 }, columnsId);
+    const firstId = doc.addBlock(
+      'affine:paragraph',
+      { text: new Text('first') },
+      columnId
+    );
+    const secondId = doc.addBlock(
+      'affine:paragraph',
+      { text: new Text('second') },
+      columnId
+    );
+
+    const target = getColumnDropTarget(
+      {
+        model: doc.getModelById(columnId),
+        childBlocks: [
+          { model: doc.getModelById(firstId) },
+          { model: doc.getModelById(secondId) },
+        ],
+      } as never,
+      'bottom'
+    );
+
+    expect(target?.placement).toBe('after');
+    expect(target?.model.id).toBe(secondId);
   });
 });

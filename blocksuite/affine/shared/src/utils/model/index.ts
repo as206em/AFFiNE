@@ -5,4 +5,5 @@ export * from './get-content-block.js';
 export * from './getter.js';
 export * from './list.js';
 export * from './merge-to-code-model.js';
+export * from './normalize-empty-column.js';
 export * from './transform-model.js';
