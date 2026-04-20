@@ -267,7 +267,7 @@ describe('columns block', () => {
       rightId
     );
 
-    const host = createTestHost(doc);
+    const host = createTestHost(doc) as any;
     host.updateComplete = Promise.resolve() as never;
     host.std.store = doc;
     host.std.event = { active: false } as never;

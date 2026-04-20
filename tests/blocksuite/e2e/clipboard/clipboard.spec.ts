@@ -1,6 +1,6 @@
 import '../utils/declare-test-window.js';
 
-import { expect } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 
 import {
   captureHistory,
@@ -43,7 +43,7 @@ import {
 } from '../utils/asserts.js';
 import { scoped, test } from '../utils/playwright.js';
 
-async function initColumnsDoc(page: Parameters<typeof test>[0]['page']) {
+async function initColumnsDoc(page: Page) {
   return page.evaluate(() => {
     const { doc } = window;
     const Text = window.$blocksuite.store.Text;
