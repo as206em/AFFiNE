@@ -27,6 +27,35 @@ type InlineRangeRunnerContext = {
 type Predict = (context: InlineRangeRunnerContext) => boolean;
 type Handler = (context: InlineRangeRunnerContext) => InlineRange | null;
 
+function remapHashtagHiddenPrefixBoundary(text: Text, offset: number) {
+  const prefix = text.parentElement?.closest('.affine-page-hashtag-prefix');
+  if (!prefix) {
+    return { text, offset };
+  }
+
+  if (offset !== calculateTextLength(text)) {
+    return { text, offset };
+  }
+
+  const content = prefix.parentElement?.querySelector(
+    '.affine-page-hashtag-content'
+  );
+  if (!(content instanceof Element)) {
+    return { text, offset };
+  }
+
+  const contentTexts = getTextNodesFromElement(content);
+  const firstText = contentTexts[0];
+  if (!firstText) {
+    return { text, offset };
+  }
+
+  return {
+    text: firstText,
+    offset: 0,
+  };
+}
+
 const rangeHasAnchorAndFocus: Predict = ({
   rootElement,
   startText,
@@ -358,6 +387,18 @@ export function inlineRangeToDomRange(
     }
     endText = texts[0];
     focusOffset = 0;
+  }
+
+  if (
+    startText === endText &&
+    anchorOffset === focusOffset &&
+    inlineRange.length === 0
+  ) {
+    const remapped = remapHashtagHiddenPrefixBoundary(startText, anchorOffset);
+    startText = remapped.text;
+    endText = remapped.text;
+    anchorOffset = remapped.offset;
+    focusOffset = remapped.offset;
   }
 
   const range = document.createRange();
