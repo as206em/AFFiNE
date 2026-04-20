@@ -26,7 +26,7 @@ async function getHashtagCaretContainer(page: import('@playwright/test').Page) {
     }
 
     const node = selection.getRangeAt(0).startContainer;
-    const element = node instanceof Text ? node.parentElement : node;
+    const element = node instanceof Element ? node : node.parentElement;
     const prefix = element?.closest('.affine-page-hashtag-prefix');
     const content = element?.closest('.affine-page-hashtag-content');
 
@@ -52,7 +52,7 @@ async function getCanonicalHashtagCaretContainer(
     }
 
     const node = range.startContainer;
-    const element = node instanceof Text ? node.parentElement : node;
+    const element = node instanceof Element ? node : node.parentElement;
     const prefix = element?.closest('.affine-page-hashtag-prefix');
     const content = element?.closest('.affine-page-hashtag-content');
 
