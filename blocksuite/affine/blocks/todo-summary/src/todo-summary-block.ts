@@ -776,7 +776,7 @@ export class TodoSummaryBlockComponent extends CaptionedBlockComponent<TodoSumma
     });
     const tagCounts = getTodoSummaryTagCounts(filteredRows);
     const availableTags = Array.from(
-      new Set([...selectedTags, ...getTodoSummaryAvailableTags(filteredRows)])
+      new Set([...selectedTags, ...getTodoSummaryAvailableTags(rows)])
     ).sort((a, b) => a.localeCompare(b));
 
     if (rows.length === 0) {

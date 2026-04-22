@@ -227,6 +227,56 @@ describe('todo summary utils', () => {
     expect(component._tagsFilter.open).toBe(false);
   });
 
+  test('shows all tags in dropdown while keeping counts contextual', () => {
+    const component = createTodoSummaryComponent();
+    const container = document.createElement('div');
+    const root = block('root', 'affine:page', {}, [
+      block(
+        'note-1',
+        'affine:note',
+        {
+          displayMode: NoteDisplayMode.DocOnly,
+        },
+        [
+          block('todo-1', 'affine:list', {
+            type: 'todo',
+            checked: true,
+            text: text('Done todo #done-tag'),
+          }),
+          block('todo-2', 'affine:list', {
+            type: 'todo',
+            checked: false,
+            text: text('Open todo #open-tag'),
+          }),
+        ]
+      ),
+    ]);
+
+    Object.defineProperty(component, 'store', {
+      value: { readonly: false, root },
+      configurable: true,
+    });
+    Object.defineProperty(component, 'model', {
+      value: {
+        props: {
+          statusFilter: 'done',
+          tagsFilter: [],
+        },
+      },
+      configurable: true,
+    });
+
+    render(component.renderBlock(), container);
+
+    const tagRows = Array.from(container.querySelectorAll('.tag-row'));
+
+    expect(tagRows).toHaveLength(2);
+    expect(tagRows[0]?.textContent).toContain('done-tag');
+    expect(tagRows[0]?.textContent).toContain('1');
+    expect(tagRows[1]?.textContent).toContain('open-tag');
+    expect(tagRows[1]?.textContent).toContain('0');
+  });
+
   test('creates one nesting indicator per level', () => {
     expect(createNestingIndicators(0)).toEqual([]);
     expect(createNestingIndicators(2)).toEqual([0, 1]);
