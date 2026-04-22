@@ -322,7 +322,7 @@ test('unfold collapsed heading when its siblings changed to text type from headi
 test('also move children when dedent collapsed heading', async ({ page }) => {
   await pressEnter(page);
   await type(page, 'aaa');
-  await page.keyboard.press('ArrowDown');
+  await pressEnter(page);
   await pressTab(page);
   await type(page, '# bbb\nccc');
 
@@ -440,7 +440,8 @@ test('unfold collapsed heading when its other blocks indented to be its sibling'
   await type(page, 'aaa');
   await page.keyboard.press('ArrowDown');
   await type(page, '# bbb\nddd');
-  await page.keyboard.press('ArrowUp');
+  const paragraph = page.locator('affine-note affine-paragraph');
+  await paragraph.nth(1).click();
   await pressTab(page);
   await page.keyboard.press('ArrowRight');
   await pressEnter(page);
@@ -453,7 +454,6 @@ test('unfold collapsed heading when its other blocks indented to be its sibling'
    * ddd
    */
 
-  const paragraph = page.locator('affine-note affine-paragraph');
   await expectParagraphVisibility(paragraph, 2, true);
   await expectParagraphState(paragraph, 2, 'text', 'ccc');
   await paragraph.locator('blocksuite-toggle-button .toggle-icon').click();

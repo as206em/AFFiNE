@@ -3,6 +3,7 @@ import {
   BookmarkBlockModel,
   CalloutBlockModel,
   CodeBlockModel,
+  ColumnBlockModel,
   DatabaseBlockModel,
   DividerBlockModel,
   EdgelessTextBlockModel,
@@ -23,6 +24,7 @@ import {
   getDocTitleInlineEditor,
   getPrevContentBlock,
   matchModels,
+  normalizeEmptyColumn,
 } from '@blocksuite/affine-shared/utils';
 import { IS_MOBILE } from '@blocksuite/global/env';
 import {
@@ -81,6 +83,7 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
     doc.deleteBlock(model, {
       bringChildrenTo: parent,
     });
+    normalizeParentColumn(parent);
 
     const syncMergedSelection = () => {
       focusTextModel(editorHost.std, prevBlock.id, lengthBeforeJoin);
@@ -129,13 +132,16 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
       });
       editorHost.selection.setGroup('note', [selection]);
     } else {
+      const prevParent = doc.getParent(prevBlock);
       doc.deleteBlock(prevBlock);
+      normalizeParentColumn(prevParent);
     }
 
     if (model.text?.length === 0) {
       doc.deleteBlock(model, {
         bringChildrenTo: parent,
       });
+      normalizeParentColumn(parent);
     }
 
     return true;
@@ -148,6 +154,12 @@ export function mergeWithPrev(editorHost: EditorHost, model: BlockModel) {
   }
 
   return false;
+}
+
+function normalizeParentColumn(parent: BlockModel | null) {
+  if (matchModels(parent, [ColumnBlockModel])) {
+    normalizeEmptyColumn(parent);
+  }
 }
 
 function handleNoPreviousSibling(editorHost: EditorHost, model: ExtendedModel) {
