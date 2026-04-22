@@ -8,3 +8,4 @@ export * from './default-inline-manager';
 export * from './inline-spec';
 export * from './keymap';
 export * from './markdown';
+export * from './nodes/affine-page-hashtag';

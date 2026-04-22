@@ -28,6 +28,7 @@ import {
 
 const todoSummaryStatusFilters = ['all', 'done', 'not-done'] as const;
 const MAX_VISIBLE_SELECTED_TAGS = 2;
+const TODO_TAG_PATTERN = /#[^\s]+/g;
 type TodoSummaryStatusFilter = (typeof todoSummaryStatusFilters)[number];
 type TodoSummaryBlockProps = {
   statusFilter: TodoSummaryStatusFilter;
@@ -43,6 +44,44 @@ const statusFilterOptions: Array<{
   { label: 'Done', value: 'done' },
   { label: 'Not done', value: 'not-done' },
 ];
+
+function splitTodoText(text: string) {
+  const segments: Array<{ text: string; hashtag: boolean }> = [];
+  let lastIndex = 0;
+
+  for (const match of text.matchAll(TODO_TAG_PATTERN)) {
+    const index = match.index ?? 0;
+
+    if (index > lastIndex) {
+      segments.push({
+        text: text.slice(lastIndex, index),
+        hashtag: false,
+      });
+    }
+
+    segments.push({
+      text: match[0],
+      hashtag: true,
+    });
+    lastIndex = index + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    segments.push({
+      text: text.slice(lastIndex),
+      hashtag: false,
+    });
+  }
+
+  return segments.length > 0
+    ? segments
+    : [
+        {
+          text,
+          hashtag: false,
+        },
+      ];
+}
 
 export class TodoSummaryBlockComponent extends CaptionedBlockComponent<TodoSummaryBlockModel> {
   static override styles = css`
@@ -765,6 +804,20 @@ export class TodoSummaryBlockComponent extends CaptionedBlockComponent<TodoSumma
     `;
   }
 
+  private _renderTodoText(text: string) {
+    return splitTodoText(text).map(segment => {
+      if (!segment.hashtag) {
+        return html`${segment.text}`;
+      }
+
+      return html`<affine-page-hashtag
+        .delta=${{
+          insert: segment.text,
+        }}
+      ></affine-page-hashtag>`;
+    });
+  }
+
   override renderBlock() {
     const rows = collectPageTodoRows(this.store.root);
     const selectedTags = this._getSelectedTags();
@@ -852,7 +905,9 @@ export class TodoSummaryBlockComponent extends CaptionedBlockComponent<TodoSumma
                                       )}
                                     </span>`
                                   : nothing}
-                                <span class="todo-value">${row.text}</span>
+                                <span class="todo-value"
+                                  >${this._renderTodoText(row.text)}</span
+                                >
                               </div>
                             </div>
                           </td>

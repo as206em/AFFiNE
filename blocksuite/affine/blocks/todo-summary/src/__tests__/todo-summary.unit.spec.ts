@@ -2,6 +2,8 @@ import { NoteDisplayMode } from '@blocksuite/affine-model';
 import { render } from 'lit';
 import { describe, expect, test, vi } from 'vitest';
 
+import { effects as inlinePresetEffects } from '../../../../inlines/preset/src/effects.js';
+import { effects as todoSummaryEffects } from '../effects.js';
 import { TodoSummaryBlockComponent } from '../todo-summary-block.js';
 import {
   collectPageTodoRows,
@@ -58,6 +60,12 @@ const createTodoSummaryComponent = () => {
 };
 
 describe('todo summary utils', () => {
+  test('does not throw when inline preset effects run after todo summary effects', () => {
+    todoSummaryEffects();
+
+    expect(() => inlinePresetEffects()).not.toThrow();
+  });
+
   test('keeps the filter inputs aligned to the right side of the filter bar', () => {
     expect(
       (TodoSummaryBlockComponent.styles as { cssText: string }).cssText
@@ -213,6 +221,47 @@ describe('todo summary utils', () => {
 
     expect(container.querySelector('.todo-heading')?.textContent?.trim()).toBe(
       'Current section'
+    );
+  });
+
+  test('renders todo hashtags with the page hashtag badge element', () => {
+    const component = createTodoSummaryComponent();
+    const container = document.createElement('div');
+    const root = block('root', 'affine:page', {}, [
+      block(
+        'note-1',
+        'affine:note',
+        {
+          displayMode: NoteDisplayMode.DocOnly,
+        },
+        [
+          block('todo-1', 'affine:list', {
+            type: 'todo',
+            checked: false,
+            text: text('Ship docs #work today'),
+          }),
+        ]
+      ),
+    ]);
+
+    Object.defineProperty(component, 'store', {
+      value: { readonly: false, root },
+      configurable: true,
+    });
+    Object.defineProperty(component, 'model', {
+      value: {
+        props: {
+          statusFilter: 'all',
+          tagsFilter: [],
+        },
+      },
+      configurable: true,
+    });
+
+    render(component.renderBlock(), container);
+
+    expect(container.querySelector('.todo-value affine-page-hashtag')).not.toBe(
+      null
     );
   });
 
