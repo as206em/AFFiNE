@@ -4,7 +4,12 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
-before_status="$(git status --porcelain --untracked-files=no)"
+tracked_status() {
+  git status --porcelain --untracked-files=no -- . \
+    ':(exclude)packages/frontend/i18n/src/i18n-completenesses.json'
+}
+
+before_status="$(tracked_status)"
 
 print_fix_message() {
   cat <<'EOF'
@@ -25,18 +30,24 @@ run_step() {
 }
 
 run_step "Checking immutable install" yarn --immutable --inline-builds
+run_step "Generating workspace configs" yarn affine init
 run_step "Building i18n outputs" yarn affine @affine/i18n build
 run_step "Building GraphQL outputs" yarn affine gql build
+run_step "Generating server config schema" yarn affine server genconfig
+run_step "Building BlockSuite docs" yarn affine bs-docs build
 
-after_status="$(git status --porcelain --untracked-files=no)"
+after_status="$(tracked_status)"
 
 if [[ "$after_status" != "$before_status" ]]; then
   echo "[pre-push] Generated tracked files changed:"
   printf '%s\n' "$after_status"
   echo "[pre-push] Commands run:"
   echo "  yarn --immutable --inline-builds"
+  echo "  yarn affine init"
   echo "  yarn affine @affine/i18n build"
   echo "  yarn affine gql build"
+  echo "  yarn affine server genconfig"
+  echo "  yarn affine bs-docs build"
   print_fix_message
   exit 1
 fi
